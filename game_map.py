@@ -5,7 +5,7 @@ from typing import Iterable, Iterator, Optional, TYPE_CHECKING;
 import numpy as np;
 from tcod.console import Console;
 
-from entity import Actor;
+from entity import Actor, Item;
 import tile_types;
 
 if TYPE_CHECKING:
@@ -22,6 +22,15 @@ class GameMap:
         self.visible = np.full((width, height), fill_value=False, order="F"); # Tiles the player is currently seeing
         self.explored = np.full((width, height), fill_value=False, order="F"); # Tiles the player has previously seen
 
+    def get_entities_at_location(self, location_x: int, location_y: int) -> List[Entity]:
+        entities_at_location = [];
+
+        for entity in self.entities:
+            if entity.x == location_x and entity.y == location_y:
+                entities_at_location.append(entity);
+
+        return entities_at_location;
+
     def get_blocking_entity_at_location(self, location_x: int, location_y: int) -> Optional[Entity]:
         for entity in self.entities:
             if entity.blocks_movement and entity.x == location_x and entity.y == location_y:
@@ -37,6 +46,10 @@ class GameMap:
         return None;
 
     @property
+    def gamemap(self) -> GameMap:
+        return self;
+
+    @property
     def actors(self) -> Iterator[Actor]:
         """Iterate over this map's living actors."""
         yield from (
@@ -44,6 +57,10 @@ class GameMap:
                 for entity in self.entities
                 if isinstance(entity, Actor) and entity.is_alive
     );
+
+    @property
+    def items(self) -> Iterator[Item]:
+        yield from (entity for entity in self.entities if isinstance(entity, Item));
 
     def in_bounds(self, x: int, y: int) -> bool:
         """ Returns True if x and y are inside of the bounds of this map. """

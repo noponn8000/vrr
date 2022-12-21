@@ -1,14 +1,44 @@
+"""Basic"""
 white = (0xFF, 0xFF, 0xFF)
 black = (0x0, 0x0, 0x0)
+red = (0xFF, 0x0, 0x0);
 
+"""Console / Log"""
 player_atk = (0xE0, 0xE0, 0xE0)
 enemy_atk = (0xFF, 0xC0, 0xC0)
+needs_target = (0x3F, 0xFF, 0xFF);
+status_effect_applied = (0x3F, 0xFF, 0x3F);
 
 player_die = (0xFF, 0x30, 0x30)
 enemy_die = (0xFF, 0xA0, 0x30)
 
-welcome_text = (0x20, 0xA0, 0xFF)
+invalid = (0xFF, 0xFF, 0x00);
+impossible = (0x80, 0x80, 0x80);
+error = (0xFF, 0x40, 0x40);
 
+welcome_text = (0x20, 0xA0, 0xFF)
+health_recovered = (0x0, 0xFF, 0x0);
+
+"""User Interface"""
+
+# Health bar
 bar_text = white
 bar_filled = (0x0, 0x60, 0x0)
 bar_empty = (0x40, 0x10, 0x10)
+
+# Menu
+ui_background = (32, 32, 32);
+ui_foreground = (220, 220, 220);
+ui_highlight = (64, 64, 64);
+
+"""Terrain"""
+default_wall_light = (100, 30, 30);
+default_wall_dark = (50, 15, 15);
+
+default_floor_light = (100, 50, 70);
+default_floor_dark  = (15, 5, 10);
+
+"""Entities"""
+lightning=(255, 255, 0);
+fireball=(255, 0, 0);
+confusion=(0, 100, 255);
