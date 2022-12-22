@@ -1,5 +1,6 @@
 from __future__ import annotations;
 
+import textwrap;
 from typing import Optional, TYPE_CHECKING;
 
 import tcod.event;
@@ -287,6 +288,46 @@ class SelectIndexHandler(AskUserEventHandler):
 
 class LookHandler(SelectIndexHandler):
     """Lets the player look around using the keyboard."""
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console);
+
+        x, y = self.engine.mouse_location;
+        entities = self.engine.game_map.get_entities_at_location(x, y);
+
+        if entities == []:
+            return;
+
+        topmost_entity = sorted(
+                entities, key=lambda x: x.render_order.value
+        )[0];
+
+        width = max(len(topmost_entity.name) + 2, 24);
+        wrapped_text = textwrap.wrap(topmost_entity.description, width - 2);
+        height = len(wrapped_text) + 4;
+        offset_x = 1 if x < 40 else -width;
+        offset_y = 1 if y < 30 else -height - 6;
+
+        console.draw_frame(
+            x=x+offset_x,
+            y=y+offset_y,
+            width=width,
+            height=height,
+            clear=True,
+            fg=color.ui_foreground,
+            bg=color.ui_background,
+        );
+
+        # Add 1 to the offsets so that the text prints inside the frame.
+        offset_x += 1;
+        offset_y += 1;
+
+        console.print(x+offset_x, y+offset_y, topmost_entity.name, fg=topmost_entity.color);
+        offset_y += 1;
+
+        for i, line in enumerate(wrapped_text):
+            offset_y += 1;
+            console.print(x+offset_x, y+offset_y, line, fg=color.white);
 
     def on_index_selected(self, x: int, y: int) -> None:
         """Return to the main handler."""

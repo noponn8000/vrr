@@ -40,6 +40,7 @@ class Fighter(BaseComponent):
 
         self.parent.char = "%";
         self.parent.color = (191, 0, 0);
+        self.parent.description = "A corpse.";
         self.parent.blocks_movement = False;
         self.parent.ai = None;
         self.parent.name = f"remains of {self.parent.name}";
