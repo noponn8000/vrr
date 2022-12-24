@@ -80,6 +80,37 @@ class WaitAction(Action):
     def perform(self) -> None:
         pass;
 
+class TakeStairsAction(Action):
+    def perform(self) -> None:
+        raise NotImplementedError();
+
+class TakeDownStairsAction(TakeStairsAction):
+    def perform(self) -> None:
+        """
+        Take the stairs leading up, if any exist at the entity's location.
+        """
+        if self.engine.game_map.tiles["name"][self.entity.x, self.entity.y].decode() == "staircase down":
+            self.engine.game_world.next_floor();
+            self.engine.message_log.add_message(
+                "You descend through the staircase.", color.descend
+            );
+        else:
+            raise exceptions.Impossible("There are no stairs leading down here.");
+
+class TakeUpStairsAction(TakeStairsAction):
+    def perform(self) -> None:
+        """
+        Take the stairs leading down, if any exist at the entity's location.
+        """
+        if self.engine.game_map.tiles["name"][self.entity.x, self.entity.y].decode() == "staircase up":
+            self.engine.game_world.previous_floor();
+
+            self.engine.message_log.add_message(
+                "You ascend through the staircase.", color.descend
+            );
+        else:
+            raise exceptions.Impossible("There are no stairs here.");
+
 class ActionWithDirection(Action):
     def __init__(self, entity: Actor, dx: int, dy: int):
         super().__init__(entity);

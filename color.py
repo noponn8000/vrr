@@ -8,6 +8,7 @@ player_atk = (0xE0, 0xE0, 0xE0)
 enemy_atk = (0xFF, 0xC0, 0xC0)
 needs_target = (0x3F, 0xFF, 0xFF);
 status_effect_applied = (0x3F, 0xFF, 0x3F);
+descend = (0x9F, 0x3F, 0xFF);
 
 player_die = (0xFF, 0x30, 0x30)
 enemy_die = (0xFF, 0xA0, 0x30)
@@ -19,6 +20,9 @@ error = (0xFF, 0x40, 0x40);
 welcome_text = (0x20, 0xA0, 0xFF)
 health_recovered = (0x0, 0xFF, 0x0);
 
+xp = (20, 150, 20);
+level_up = (150, 150, 20);
+
 """User Interface"""
 
 # Health bar
@@ -26,10 +30,16 @@ bar_text = white
 bar_filled = (0x0, 0x60, 0x0)
 bar_empty = (0x40, 0x10, 0x10)
 
+# Experience bar
+xp_bar_filled = (0, 20, 150);
+xp_bar_empty = (0, 0, 20);
+
 # Menu
 ui_background = (32, 32, 32);
 ui_foreground = (220, 220, 220);
 ui_highlight = (64, 64, 64);
+ui_title = (100, 30, 30);
+ui_subtitle = (150, 45, 45);
 
 """Terrain"""
 default_wall_light = (100, 30, 30);

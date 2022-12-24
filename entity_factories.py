@@ -2,6 +2,7 @@ from components.ai import HostileEnemy;
 from components import consumable;
 from components.fighter import Fighter;
 from components.inventory import Inventory;
+from components.level import Level;
 from entity import Actor, Item;
 import color;
 
@@ -12,14 +13,19 @@ player = Actor(
         description="It's you. An enigmatic character, you appear suspicious even to yourself.",
         ai_cls=HostileEnemy,
         fighter=Fighter(hp=30, defense=2, power=5),
-        inventory=Inventory(capacity=26)
+        inventory=Inventory(capacity=26),
+        level=Level(level_up_base=200)
 );
 
 toad = Actor(char="t",
              color=(25, 150, 25),
              name="Depraved Toad",
              description="This restless amphibian scours the obscure corners of Varr, constantly being driven back and forth by the migrations of more powerful beings. Even though nothing is known about these creatures' moral compass, or lack thereof, their depravity is a generally accepted fact, even constituting the greater part of its name.",
-             ai_cls=HostileEnemy, fighter=Fighter(hp=10, defense=0, power=3), inventory=Inventory(capacity=0));
+             ai_cls=HostileEnemy,
+             fighter=Fighter(hp=10, defense=0, power=3),
+             inventory=Inventory(capacity=0),
+             level=Level(xp_given=35)
+             );
 
 tortoise = Actor(char="R",
                  color=(25, 25, 150),
@@ -27,7 +33,9 @@ tortoise = Actor(char="R",
                  description="One can barely make out a small, dessicated head lurking beneath the thick armor of this plated reptile. Curiously, almost all of the specimen alive today are hundreds of years old and their population shrinks constantly, in part thanks to you. One can only wonder why this creature takes such pleasure in brutalizing travellers.",
                  ai_cls=HostileEnemy,
                  fighter=Fighter(hp=16, defense=1, power=4),
-                 inventory=Inventory(capacity=0));
+                 inventory=Inventory(capacity=0),
+                 level=Level(xp_given=100)
+                 );
 
 health_potion = Item(
         char="!",

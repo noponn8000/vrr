@@ -22,6 +22,9 @@ class GameMap:
         self.visible = np.full((width, height), fill_value=False, order="F"); # Tiles the player is currently seeing
         self.explored = np.full((width, height), fill_value=False, order="F"); # Tiles the player has previously seen
 
+        self.downstairs_location = (0, 0);
+        self.upstairs_location = (0, 0);
+
     def get_entities_at_location(self, location_x: int, location_y: int) -> List[Entity]:
         entities_at_location = [];
 
@@ -89,3 +92,79 @@ class GameMap:
             # Only print entities that are in the FOV
             if self.visible[entity.x, entity.y]:
                 console.print(entity.x, entity.y, entity.char, fg=entity.color);
+
+class GameWorld:
+    """
+    Holds the settings for the GameMap, and generates new maps when moving down.
+    """
+
+    def __init__(
+            self,
+            *,
+            engine: Engine,
+            map_width: int,
+            map_height: int,
+            max_rooms: int,
+            room_min_size: int,
+            room_max_size: int,
+            current_floor: int = 0,
+    ):
+        self.engine = engine;
+
+        self.map_width = map_width;
+        self.map_height = map_height;
+
+        self.max_rooms = max_rooms;
+
+        self.room_min_size = room_min_size;
+        self.room_max_size = room_max_size;
+
+        self.current_floor = current_floor;
+
+        self.floors = [];
+
+    def next_floor(self) -> None:
+        self.current_floor += 1;
+
+        if len(self.floors) > self.current_floor:
+            self.load_floor(self.current_floor);
+
+            x, y = self.engine.game_map.upstairs_location;
+            self.engine.player.place(x, y, self.engine.game_map);
+        else:
+            self.generate_floor();
+
+    def previous_floor(self) -> None:
+        self.current_floor -= 1;
+
+        self.load_floor(self.current_floor);
+
+        x, y = self.engine.game_map.downstairs_location;
+        self.engine.player.place(x, y, self.engine.game_map);
+
+    def generate_floor(self) -> None:
+        from procgen import generate_dungeon;
+
+        new_floor = generate_dungeon(
+            max_rooms=self.max_rooms,
+            room_min_size=self.room_min_size,
+            room_max_size=self.room_max_size,
+            map_width=self.map_width,
+            map_height=self.map_height,
+            engine=self.engine,
+        );
+
+        self.floors.append(new_floor);
+
+        self.engine.game_map = new_floor;
+
+        if self.current_floor > 0:
+            self.engine.game_map.tiles[self.engine.player.x, self.engine.player.y] = tile_types.up_stairs;
+            self.engine.game_map.upstairs_location = (self.engine.player.x, self.engine.player.y);
+
+    def load_floor(self, index: int) -> None:
+        try:
+            self.engine.game_map = self.floors[index];
+        except IndexError:
+            print(f"Invalid floor index {index}");
+            return;

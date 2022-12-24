@@ -20,20 +20,37 @@ def get_names_at_location(x: int, y: int, game_map: GameMap) -> str:
     return names.capitalize();
 
 def render_bar(
-        console: Console, current_value: int, maximum_value: int, total_width: int
+        console: Console,
+        x: int,
+        y: int,
+        current_value: int,
+        maximum_value: int,
+        total_width: int,
+        color_empty: Tuple[int, int, int] = color.bar_empty,
+        color_filled: Tuple[int, int, int] = color.bar_filled
 ) -> None:
     bar_width = int(float(current_value) / maximum_value * total_width);
 
-    console.draw_rect(x=0, y=45, width=total_width, height=1, ch=1, bg=color.bar_empty);
+    console.draw_rect(x=x, y=y, width=total_width, height=1, ch=1, bg=color_empty);
 
     if bar_width > 0:
         console.draw_rect(
-                x=0, y=45, width=bar_width, height=1, ch=1, bg=color.bar_filled
+                x=x, y=y, width=bar_width, height=1, ch=1, bg=color_filled
         );
 
     console.print(
-            x=1, y=45, string=f"{current_value}/{maximum_value}", fg=color.bar_text
+            x=x + 1, y=y, string=f"{current_value}/{maximum_value}", fg=color.bar_text
     );
+
+def render_dungeon_level(
+        console: Console, dungeon_level: int, location: Tuple[int, int]
+) -> None:
+    """
+    Render the current floor the player is on at the given location.
+    """
+    x, y = location;
+
+    console.print(x=x, y=y, string=f"{dungeon_level} floors deep");
 
 def render_names_at_mouse_location(
         console: Console, x: int, y: int, engine: Engine
