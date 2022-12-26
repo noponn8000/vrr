@@ -308,6 +308,13 @@ class InventoryEventHandler(AskUserEventHandler):
             for i, item in enumerate(self.engine.player.inventory.items[self.offset:]):
                 bg = color.ui_highlight if i == self.cursor else color.ui_background;
                 item_key = chr(ord("a") + i);
+                is_equipped = self.engine.player.equipment.item_is_equipped(item);
+
+                item_string = f"({item_key}) {item.name}";
+
+                if is_equipped:
+                    item_string = item_string + " (E)";
+
                 console.print(x + 1, y + i + 1,
                               f"[{item.char}] ",
                               fg=item.color,
@@ -316,7 +323,7 @@ class InventoryEventHandler(AskUserEventHandler):
                 console.print(
                     x + 5,
                     y + i + 1,
-                    f"({item_key}) {item.name}",
+                    item_string,
                     bg=bg,
                     fg=color.ui_foreground
                 );
@@ -363,7 +370,12 @@ class InventoryActivateHandler(InventoryEventHandler):
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Return the action for the selected item."""
-        return item.consumable.get_action(self.engine.player);
+        if item.consumable:
+            return item.consumable.get_action(self.engine.player);
+        elif item.equippable:
+            return actions.EquipAction(self.engine.player, item);
+        else:
+            return None;
 
 class InventoryDropHandler(InventoryEventHandler):
     """Handle dropping an inventory item."""

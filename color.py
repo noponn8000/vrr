@@ -52,3 +52,7 @@ default_floor_dark  = (15, 5, 10);
 lightning=(255, 255, 0);
 fireball=(255, 0, 0);
 confusion=(0, 100, 255);
+
+steel=(20, 20, 30);
+leather=(100, 100, 50);
+tin=(20, 30, 20);

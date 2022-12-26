@@ -10,9 +10,9 @@ if TYPE_CHECKING:
 class Inventory(BaseComponent):
     parent: Actor;
 
-    def __init__(self, capacity: int):
+    def __init__(self, capacity: int, items: List[Item] = []):
         self.capacity = capacity;
-        self.items: List[Item] = [];
+        self.items = items;
 
     def drop(self, item: Item) -> None:
         """ Removes an item from the inventory and restores it to the game map, at the player's location.
