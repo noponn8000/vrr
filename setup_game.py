@@ -47,6 +47,11 @@ def new_game() -> Engine:
             "You set out for the Interior. The expanses of reality await you.", color.welcome_text
     );
 
+    # Equip the stater gear.
+    for slot in player.inventory.items:
+        if slot.item.equippable:
+            player.equipment.toggle_equip(slot.item, add_message=False);
+
     return engine;
 
 def load_game(filename: str) -> Engine:
@@ -80,7 +85,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         menu_width = 24;
         for i, text in enumerate(
-            ["[N] Play a new game", "[C] Continue last game", "[Q] Quit"]
+            ["[N] Play a new game", "[C] Continue last game", "[R] Create a new character", "[Q] Quit"]
         ):
             console.print(
                 console.width // 2,
@@ -107,5 +112,7 @@ class MainMenu(input_handlers.BaseEventHandler):
                 return input_handlers.PopupMessage(self, f"Failed to load save:\n{exc}");
         elif event.sym == tcod.event.K_n:
             return input_handlers.MainGameEventHandler(new_game());
+        elif event.sym == tcod.event.K_r:
+            return input_handlers.CharacterCreationHandler(new_game(), ["vitality", "resistance", "strength"], 10);
 
         return None;

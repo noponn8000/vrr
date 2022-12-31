@@ -41,6 +41,10 @@ class BaseAI(Action):
         # Convert from nested array to tuple array.
         return[(index[0], index[1]) for index in path];
 
+class StaticObjectAI(BaseAI):
+    def perform(self) -> None:
+        pass;
+
 class ConfusedEnemy(BaseAI):
     """
     A confused enemy will stumble around aimlessly for a given number of turns.

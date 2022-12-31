@@ -46,7 +46,7 @@ class PickupAction(Action):
 
                 self.engine.game_map.entities.remove(item);
                 item.parent = self.entity.inventory;
-                inventory.items.append(item);
+                inventory.add(item);
 
                 self.engine.message_log.add_message(f"You pick up the {item.name}.");
                 return;
@@ -84,6 +84,9 @@ class EquipAction(Action):
 
 class DropItemAction(ItemAction):
     def perform(self) -> None:
+        if self.entity.equipment.item_is_equipped(self.item):
+            self.entity.equipment.toggle_equip(self.item);
+
         self.entity.inventory.drop(self.item);
 
 class WaitAction(Action):

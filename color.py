@@ -41,6 +41,14 @@ ui_highlight = (64, 64, 64);
 ui_title = (100, 30, 30);
 ui_subtitle = (150, 45, 45);
 
+# Character sheet
+vitality = (20, 255, 20);
+strength = (255, 120, 40);
+resistance = (20, 20, 255);
+experience = (20, 20, 255);
+
+attribute_colors = {"vitality": vitality, "strength": strength, "resistance": resistance};
+
 """Terrain"""
 default_wall_light = (100, 30, 30);
 default_wall_dark = (50, 15, 15);

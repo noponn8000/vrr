@@ -12,11 +12,19 @@ if TYPE_CHECKING:
 class Fighter(BaseComponent):
     parent: Actor;
 
-    def __init__(self, hp: int, base_defense: int, base_power: int):
+    def __init__(self, hp: int = 20, base_defense: int = 1, base_power: int = 1):
         self.max_hp = hp;
         self._hp = hp;
         self.base_defense = base_defense;
         self.base_power = base_power;
+
+    def update_stats(self) -> None:
+        if self.parent.attributes:
+            attrs = self.parent.attributes.attributes;
+            self.max_hp = attrs["vitality"] * self.parent.level.current_level * 20;
+            self._hp = self.max_hp;
+            self.base_defense = attrs["resistance"];
+            self.base_power = attrs["strength"];
 
     @property
     def hp(self) -> int:
@@ -65,6 +73,9 @@ class Fighter(BaseComponent):
         self.parent.ai = None;
         self.parent.name = f"remains of {self.parent.name}";
         self.parent.render_order = RenderOrder.CORPSE;
+
+        if self.parent.inventory:
+            self.parent.inventory.accessible = True;
 
         self.engine.message_log.add_message(death_message, death_message_color);
         self.engine.player.level.add_xp(self.parent.level.xp_given);

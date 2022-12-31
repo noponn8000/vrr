@@ -48,6 +48,22 @@ class GameMap:
 
         return None;
 
+    def get_inventory_at_location(self, x: int, y: int) -> Optional[Inventory]:
+        for entity in self.entities:
+            if entity.name != "Player" and entity.x == x and entity.y == y:
+                if entity.inventory and entity.inventory.accessible:
+                    return entity.inventory;
+
+        return None;
+
+    def get_dialogue_at_location(self, x: int, y: int) -> Optional[Dialogue]:
+        for entity in self.entities:
+            if entity.name != "Player" and entity.x == x and entity.y == y:
+                if entity.dialogue:
+                    return entity.dialogue;
+
+        return None;
+
     @property
     def gamemap(self) -> GameMap:
         return self;
@@ -143,6 +159,19 @@ class GameWorld:
         self.engine.player.place(x, y, self.engine.game_map);
 
     def generate_floor(self) -> None:
+        # Cellular automaton dungeon generation
+        #from procgen import cellular_dungeon;
+
+        #new_floor = cellular_dungeon(
+        #            self.engine,
+        #            map_width = self.map_width,
+        #            map_height = self.map_height,
+        #            wall_conversion = 4,
+        #            floor_conversion = 4,
+        #            step_count = 5,
+        #            wall_chance = 0.4,
+        #);
+
         from procgen import generate_dungeon;
 
         new_floor = generate_dungeon(
@@ -157,6 +186,7 @@ class GameWorld:
         self.floors.append(new_floor);
 
         self.engine.game_map = new_floor;
+        print("game map assigned");
 
         if self.current_floor > 0:
             self.engine.game_map.tiles[self.engine.player.x, self.engine.player.y] = tile_types.up_stairs;

@@ -3,12 +3,14 @@ from __future__ import annotations;
 import os;
 
 import textwrap;
+import random;
 from typing import Callable, Optional, Tuple, TYPE_CHECKING, Union;
 
 import tcod.event;
 
 import actions;
 from actions import Action, BumpAction, WaitAction, PickupAction;
+from components.attributes import Attributes;
 import color;
 import exceptions;
 
@@ -238,11 +240,13 @@ class LevelUpEventHandler(AskUserEventHandler):
         if 0 <= index <= 2:
             match index:
                case 0:
-                    player.level.increase_max_hp();
+                    player.attributes.attributes["vitality"] += 1;
                case 1:
-                    player.level.increase_power();
+                    player.attributes.attributes["strength"] += 1;
                case 2:
-                    player.level.increase_defense();
+                    player.attributes.attributes["resistance"] += 1;
+            player.level.increase_level();
+            player.fighter.update_stats();
         else:
             self.engine.message_log.add_message("Invalid entry.", color.invalid);
 
@@ -265,10 +269,11 @@ class InventoryEventHandler(AskUserEventHandler):
 
     TITLE = "<missing title>";
 
-    def __init__(self, engine: Engine):
+    def __init__(self, inventory: Inventory, engine: Engine):
         super().__init__(engine);
 
-        self.number_of_entries = min(len(self.engine.player.inventory.items), 26);
+        self.inventory = inventory;
+        self.number_of_entries = min(len(self.inventory.items), 26);
         self.cursor = 0;
         self.offset = 0;
 
@@ -277,9 +282,8 @@ class InventoryEventHandler(AskUserEventHandler):
         It will move to a different position based on where the player is located.
         """
         super().on_render(console);
-        number_of_items_in_inventory = len(self.engine.player.inventory.items);
 
-        height = number_of_items_in_inventory + 2;
+        height = self.number_of_entries + 2;
 
         if height <= 3:
             height = 3;
@@ -304,16 +308,20 @@ class InventoryEventHandler(AskUserEventHandler):
             bg=color.ui_background
         );
 
-        if number_of_items_in_inventory > 0:
-            for i, item in enumerate(self.engine.player.inventory.items[self.offset:]):
+        if self.number_of_entries > 0:
+            for i, slot in enumerate(self.inventory.items[self.offset:]):
                 bg = color.ui_highlight if i == self.cursor else color.ui_background;
                 item_key = chr(ord("a") + i);
+                item = slot.item;
                 is_equipped = self.engine.player.equipment.item_is_equipped(item);
 
                 item_string = f"({item_key}) {item.name}";
 
+                if slot.count > 1:
+                    item_string += f" x{slot.count} "
+
                 if is_equipped:
-                    item_string = item_string + " (E)";
+                    item_string = item_string + " (E) ";
 
                 console.print(x + 1, y + i + 1,
                               f"[{item.char}] ",
@@ -331,6 +339,9 @@ class InventoryEventHandler(AskUserEventHandler):
             console.print(x + 1, y + 1, "(Empty)");
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        if not self.inventory:
+            return MainGameEventHandler(self.engine);
+
         player = self.engine.player;
         key = event.sym;
         index = key - tcod.event.K_a;
@@ -338,7 +349,7 @@ class InventoryEventHandler(AskUserEventHandler):
         if key in CURSOR_Y_KEYS:
             self.cursor = min(
                 max(self.cursor + CURSOR_Y_KEYS[key], 0),
-                len(player.inventory.items)
+                len(self.inventory.items)
              );
 
             if self.cursor > self.number_of_entries - 1:
@@ -347,12 +358,12 @@ class InventoryEventHandler(AskUserEventHandler):
             return None;
 
         if key in CONFIRM_KEYS:
-            selected_item = player.inventory.items[self.cursor];
+            selected_item = self.inventory.items[self.cursor].item;
             return self.on_item_selected(selected_item);
 
         if 0 <= index <= 26:
             try:
-                selected_item = player.inventory.items[index + self.offset];
+                selected_item = self.inventory.items[index + self.offset];
             except IndexError:
                 self.engine.message_log.add_message("Invalid entry.", color.invalid);
                 return None;
@@ -363,10 +374,24 @@ class InventoryEventHandler(AskUserEventHandler):
         """Called when the user selects a valid item."""
         raise NotImplementedError();
 
+class InventoryCollectHandler(InventoryEventHandler):
+    def __init__(self, engine: Engine, inventory: Inventory, title: str = "<No Title>"):
+        super().__init__(inventory, engine);
+        self.TITLE = title;
+
+    def set_position(x: int, y: int) -> None:
+        super().set_position(x, y);
+        self.inventory = self.engine.game_map.get_inventory_at_location(self.x, self.y);
+        self.title = f"{self.inventory.parent.name}'s Inventory";
+
+    def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
+        self.engine.player.inventory.add(item);
+        self.inventory.remove(item);
+
 class InventoryActivateHandler(InventoryEventHandler):
     """Handle using an inventory item."""
 
-    TITLE = "Inventory - Use consumable";
+    TITLE = "Inventory - Context Menu";
 
     def on_item_selected(self, item: Item) -> Optional[ActionOrHandler]:
         """Return the action for the selected item."""
@@ -558,14 +583,27 @@ class MainGameEventHandler(EventHandler):
         elif key == tcod.event.K_g:
             action = PickupAction(player);
         elif key == tcod.event.K_u:
-            return InventoryActivateHandler(self.engine);
+            if modifier & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+                return ChooseCollectDirectionHandler(self.engine, player.x, player.y);
+                #inventory_at_location = self.engine.game_map.get_inventory_at_location(player.x, player.y);
+
+                #if inventory_at_location:
+                    #title = f"{inventory_at_location.parent.name}'s Inventory";
+                    #return InventoryCollectHandler(self.engine, inventory_at_location, title);
+            else:
+                return InventoryActivateHandler(self.engine.player.inventory, self.engine);
+        elif key == tcod.event.K_t:
+            return ChooseDialogueDirectionHandler(self.engine, player.x, player.y);
         elif key == tcod.event.K_d:
-            return InventoryDropHandler(self.engine);
+            return InventoryDropHandler(self.engine.player.inventory, self.engine);
         elif key == tcod.event.K_l:
             return LookHandler(self.engine);
         elif key==tcod.event.K_r:
             # Reveal the whole map (debug purposes)
             self.engine.game_map.explored[:, :] = True;
+        elif key==tcod.event.K_x:
+            return CharacterSheet(self.engine.player, self.engine);
+
 
         return action;
 
@@ -626,4 +664,257 @@ class HistoryViewer(EventHandler):
             self.cursor = self.log_length - 1; # Move directly to the last message.
         else: # Any other key moves back to the main game state.
             return MainGameEventHandler(self.engine);
+        return None;
+
+class CharacterSheet(EventHandler):
+    """Print an self.entity's statistics."""
+    def __init__(self, entity: Entity, engine: Engine):
+        super().__init__(engine);
+        self.entity = entity;
+
+    def on_render(self, console: tcod.Console) -> Optional[MainGameEventHandler]:
+        super().on_render(console);
+
+        sheet_console=tcod.Console(console.width - 20, console.height - 20);
+
+        sheet_console.draw_frame(0, 0, sheet_console.width, sheet_console.height);
+        sheet_console.print_box(
+            0, 0, sheet_console.width, 1, f"┤{self.entity.name}'s character sheet├", alignment=tcod.CENTER
+        );
+
+        sheet_console.print(1, 1, "┤Level and experience├");
+
+        if self.entity.level:
+            sheet_console.print(1, 2, f"- Level: {self.entity.level.current_level}", fg=color.experience);
+            sheet_console.print(1, 4, f"- Experience to next level: {self.entity.level.experience_to_next_level}", fg=color.experience);
+        else:
+            sheet_console.print(1, 2, "- Level: <No Data>");
+            sheet_console.print(1, 4, "- Experience to next level: <No Data>");
+
+        sheet_console.print(1, 6, "┤Attributes and health├");
+
+        if self.entity.fighter:
+            sheet_console.print(1, 7, f"- Health: {self.entity.fighter.hp}/{self.entity.fighter.max_hp}", fg=color.vitality);
+            sheet_console.print(1, 9, f"- Vitality: {self.entity.attributes.attributes['vitality']}", fg=color.vitality);
+            sheet_console.print(1, 11, f"- Strength: {self.entity.attributes.attributes['strength']}", fg=color.strength);
+            sheet_console.print(1, 13, f"- Resistance: {self.entity.attributes.attributes['resistance']}", fg=color.resistance);
+        else:
+            sheet_console.print(1, 7, f"- Health: <No Data>");
+            sheet_console.print(1, 9, f"- Vitality: <No Data>");
+            sheet_console.print(1, 11, f"- Strength: <No Data>");
+            sheet_console.print(1, 13, f"- Resistance: <No Data>");
+
+        sheet_console.print(1, 15, "┤Equipment├");
+
+        if self.entity.equipment:
+            if self.entity.equipment.weapon:
+                sheet_console.print(1, 16, f"Weapon: {self.entity.equipment.weapon.name}", fg=color.strength);
+            else:
+                sheet_console.print(1, 16, "Weapon: <Empty>");
+
+
+            if self.entity.equipment.weapon:
+                sheet_console.print(1, 18, f"Armor: {self.entity.equipment.armor.name}", fg=color.resistance);
+            else:
+                sheet_console.print(1, 18, "Armor: <Empty>");
+        else:
+            sheet_console.print(1, 16, "No equimpent");
+
+        sheet_console.blit(console, 10, 10);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
+        if event.sym == tcod.event.K_ESCAPE:
+            return MainGameEventHandler(self.engine);
+
+class DialogueEventHandler(EventHandler):
+    def __init__(self, dialogue: Optional[Dialogue], engine: Engine):
+        super().__init__(engine);
+
+        if dialogue:
+            self.dialogue = dialogue;
+        else:
+            self.dialogue = self.engine.game_map.get_dialogue_at_position(self.x, self.y);
+        self.cursor = 0;
+        self.number_of_entries = len(self.dialogue.choices);
+
+    def on_render(self, console: Console) -> None:
+        super().on_render(console);
+
+        dialogue_console = tcod.Console(console.width - 30, console.height - 30);
+
+        dialogue_console.draw_frame(0, 0, dialogue_console.width, dialogue_console.height, decoration="╔═╗║ ║╚═╝");
+        dialogue_console.print_box(
+            0, 0, dialogue_console.width, 1, f"┤{self.dialogue.parent.name}├", alignment=tcod.CENTER
+        );
+
+        text_lines = textwrap.wrap(self.dialogue.text, console.width - 2);
+        for offset, line in enumerate(text_lines):
+            dialogue_console.print(
+                1, offset + 1, line
+            );
+
+        y = len(text_lines) + 1;
+        for index, choice in enumerate(self.dialogue.choices):
+           y += 1;
+           bg_color = color.ui_highlight if self.cursor == index else color.black;
+
+           char = chr(ord("a") + index);
+
+           frame_width = dialogue_console.width - 4;
+           choice_lines = textwrap.wrap(choice.choice_text, frame_width - 5);
+
+           frame_height = len(choice_lines) + 2;
+
+           dialogue_console.draw_frame(1, y, frame_width, frame_height, "");
+           dialogue_console.print(2, y + 1, f"{char})");
+
+           for offset, line in enumerate(choice_lines):
+               dialogue_console.print(5, y + offset + 1, line, bg=bg_color);
+           y += frame_height;
+
+        dialogue_console.blit(console, 15, 15);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[EventOrHandler]:
+        # The player has exhausted the dialogue.
+        if self.dialogue.choices == []:
+            self.dialogue.reset();
+            return MainGameEventHandler(self.engine);
+
+        key = event.sym;
+        if key in CURSOR_Y_KEYS:
+            self.cursor = max(0, min(self.number_of_entries, self.cursor + CURSOR_Y_KEYS[key]));
+
+        if key in CONFIRM_KEYS:
+            self.dialogue.make_choice(self.cursor);
+
+        if key == tcod.event.K_ESCAPE:
+            self.dialogue.reset();
+            return MainGameEventHandler(self.engine);
+
+        return None;
+
+class ChooseDirectionHandler(EventHandler):
+    def __init__(self, engine: Engine, x: int, y: int):
+        super().__init__(engine);
+
+        self.x = x;
+        self.y = y;
+
+    def on_render(self, console: Console) -> None:
+        super().on_render(console);
+
+        console.draw_frame(0, 0, 25, 3);
+        console.print(1, 1, "Select a direction...");
+
+    def choose_direction(self, event: tcod.event.KeyDown):
+        if event.sym in MOVE_KEYS:
+            dx, dy = MOVE_KEYS[event.sym];
+            if self.engine.game_map.in_bounds(self.x + dx, self.y + dy):
+                print(self.x);
+                self.x += dx;
+                self.y += dy;
+
+class ChooseCollectDirectionHandler(ChooseDirectionHandler):
+    def __init__(self, engine: Engine, x: int, y: int):
+        super().__init__(engine, x, y);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        super().choose_direction(event);
+
+        if event.sym in MOVE_KEYS or event.sym in CONFIRM_KEYS:
+                inventory_at_location = self.engine.game_map.get_inventory_at_location(self.x, self.y);
+                print(inventory_at_location);
+
+                if inventory_at_location:
+                    title = f"{inventory_at_location.parent.name}'s Inventory";
+                    return InventoryCollectHandler(self.engine, inventory_at_location, title);
+                else:
+                    return MainGameEventHandler(self.engine);
+
+        if event.sym == tcod.event.K_ESCAPE:
+            return MainGameEventHandler(self.engine);
+
+        return None;
+
+class ChooseDialogueDirectionHandler(ChooseDirectionHandler):
+    def __init__(self, engine: Engine, x: int, y: int):
+        super().__init__(engine, x, y);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        super().choose_direction(event);
+
+        if event.sym in MOVE_KEYS or event.sym in CONFIRM_KEYS:
+                dialogue_at_location = self.engine.game_map.get_dialogue_at_location(self.x, self.y);
+
+                if dialogue_at_location:
+                    return DialogueEventHandler(dialogue_at_location, self.engine);
+                else:
+                    return MainGameEventHandler(self.engine);
+
+        if event.sym == tcod.event.K_ESCAPE:
+            return MainGameEventHandler(self.engine);
+
+        return None;
+
+
+class CharacterCreationHandler(EventHandler):
+    def __init__(self, engine: Engine, attributes: List[str], points: int):
+        super().__init__(engine);
+        self.attributes = {};
+        for attribute in attributes:
+           self.attributes[attribute] = 0;
+        self.points = points;
+        self.index = 0;
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console);
+
+        character_console = tcod.Console(console.width - 30, console.height - 30);
+
+        character_console.draw_frame(0, 0, character_console.width, character_console.height, "Character Creation");
+        character_console.print(1, 1, "Choose your attributes:");
+
+        y = 2;
+        for index, attribute in enumerate(list(self.attributes.keys())):
+            bg_color = color.ui_highlight if index == self.index else color.black;
+            character_console.print(1, y, f"{attribute.capitalize()}: {self.attributes[attribute]}", bg=bg_color, fg=color.attribute_colors[attribute]);
+
+            y += 2;
+
+        character_console.print(1, y, f"Points remaining: {self.points}");
+        if self.points > 0:
+            character_console.print(1, y + 1, "You have points remaining. Press r to distribute them randomly.")
+        else:
+            character_console.print(1, y + 1, "Press Return to finish character creation.");
+
+        character_console.blit(console, 15, 15);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        key = event.sym;
+        current_attribute = list(self.attributes.keys())[self.index];
+
+        if key in CURSOR_Y_KEYS:
+            self.index = max(0, min(self.index + CURSOR_Y_KEYS[key], len(self.attributes) - 1));
+
+        elif key == tcod.event.K_LEFT:
+            if self.attributes[current_attribute] > 0:
+                self.attributes[current_attribute] -= 1;
+                self.points += 1;
+        elif key == tcod.event.K_RIGHT:
+            if self.points > 0:
+                self.attributes[current_attribute] += 1;
+                self.points -= 1;
+        elif key in CONFIRM_KEYS:
+            if self.points == 0:
+                # TODO: assign the attributes to the player
+                self.engine.player.attributes = Attributes(self.attributes);
+                self.engine.player.fighter.update_stats();
+                return MainGameEventHandler(self.engine);
+        elif key == tcod.event.K_r:
+            for i in range(self.points):
+                self.attributes[
+                    random.choice(list(self.attributes.keys()))
+                ] += 1;
+                self.points -= 1;
+
         return None;

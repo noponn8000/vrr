@@ -1,11 +1,31 @@
-from components.ai import HostileEnemy;
+import copy;
+
+from components.ai import HostileEnemy, StaticObjectAI;
 from components import consumable, equippable;
 from components.fighter import Fighter;
-from components.inventory import Inventory;
+from components.inventory import Inventory, Slot;
 from components.level import Level;
-from components.equipment import Equipment;
-from entity import Actor, Item;
+from components.equipment import Equipment, EquipmentType;
+from components.dialogue import Dialogue;
+from components.attributes import Attributes;
+from entity import Actor, Entity, Item;
+import dialogue_factories;
 import color;
+
+basalt_rock = Item(
+    char="o",
+    color=(20, 20, 20),
+    name="Basalt Rock",
+    description="A small piece of hardened magma. Due to its relative scarcity and durabilty, it is valued by merchants as tender.",
+    equippable=equippable.Equippable(EquipmentType.WEAPON,power_bonus=1, defense_bonus=0)
+);
+
+pickaxe = Item(
+    char="^",
+    color=color.steel,
+    description="A well-worn pickaxe. Countless such tools were given out to the condemned who were sent to work in the Tar Pits. Little did their overseers know that these same tools would then be used by the enslaved to decimate their masters once the noxious fumes of the Ferrum deprived them of their wits.",
+    equippable=equippable.Equippable(EquipmentType.WEAPON, power_bonus=3, defense_bonus=0)
+)
 
 toad = Actor(char="t",
              color=(25, 150, 25),
@@ -13,9 +33,11 @@ toad = Actor(char="t",
              description="This restless amphibian scours the obscure corners of Varr, constantly being driven back and forth by the migrations of more powerful beings. Even though nothing is known about these creatures' moral compass, or lack thereof, their depravity is a generally accepted fact, even constituting the greater part of its name.",
              ai_cls=HostileEnemy,
              equipment=Equipment(),
-             fighter=Fighter(hp=10, base_defense=0, base_power=3),
-             inventory=Inventory(capacity=0),
-             level=Level(xp_given=35)
+             fighter=Fighter(),
+             inventory=Inventory(capacity=2),
+             level=Level(xp_given=35),
+             dialogue=dialogue_factories.toad_dialogue,
+             attributes=Attributes({"vitality": 1, "strength": 1, "resistance": 1})
              );
 
 tortoise = Actor(char="R",
@@ -24,10 +46,25 @@ tortoise = Actor(char="R",
                  description="One can barely make out a small, dessicated head lurking beneath the thick armor of this plated reptile. Curiously, almost all of the specimen alive today are hundreds of years old and their population shrinks constantly, in part thanks to you. One can only wonder why this creature takes such pleasure in brutalizing travellers.",
                  ai_cls=HostileEnemy,
                  equipment=Equipment(),
-                 fighter=Fighter(hp=16, base_defense=1, base_power=4),
+                 fighter=Fighter(),
                  inventory=Inventory(capacity=0),
-                 level=Level(xp_given=100)
+                 level=Level(xp_given=100),
+                 dialogue=Dialogue(),
+                 attributes=Attributes({"vitality": 1, "strength": 1, "resistance": 1})
                  );
+
+miner = Actor(char="M",
+              color=(220, 0, 50),
+              name="Lapidified Miner",
+              description="The hard crust of compressed volcanic ash mixed with centuries-old mud and grime hides a hollow interior which may once have housed a soul.",
+              ai_cls=HostileEnemy,
+              equipment=Equipment(),
+              inventory=Inventory(capacity=2),
+              fighter=Fighter(),
+              level=Level(xp_given=250),
+              dialogue=Dialogue(),
+              attributes=Attributes({"vitality": 1, "strength": 1, "resistance": 1})
+              );
 
 health_potion = Item(
         char="!",
@@ -100,7 +137,18 @@ player = Actor(
         description="It's you. An enigmatic character, you appear suspicious even to yourself.",
         ai_cls=HostileEnemy,
         equipment=Equipment(),
-        fighter=Fighter(hp=30, base_defense=1, base_power=2),
-        inventory=Inventory(capacity=26, items=[dagger, leather_topcoat]),
-        level=Level(level_up_base=200)
+        fighter=Fighter(),
+        inventory=Inventory(capacity=26, items=[Slot(copy.deepcopy(dagger)), Slot(copy.deepcopy(leather_topcoat))]),
+        level=Level(level_up_base=200),
+        dialogue=Dialogue(),
+        attributes=Attributes(),
+);
+
+chest = Entity(
+    char="#",
+    color=(255, 255, 255),
+    name="Chest",
+    description="A collection of thin, wooden planks held together by a few rusty strips of iron. The lock probably does not hold anymore.",
+    blocks_movement=False,
+    inventory=Inventory(capacity=26, items=[Slot(copy.deepcopy(chain_mail))], accessible=True),
 );

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from components.inventory import Inventory;
     from components.level import Level;
     from components.fighter import Fighter;
+    from components.attributes import Attributes;
 
 T = TypeVar("T", bound="Entity");
 
@@ -35,7 +36,8 @@ class Entity:
             description: str = "<No Description>",
             blocks_movement: bool = False,
             render_order: RenderOrder = RenderOrder.CORPSE,
-    ):
+            inventory: Optional[Inventory] = None
+        ):
         self.x = x;
         self.y = y;
         self.char = char;
@@ -44,6 +46,10 @@ class Entity:
         self.description=description;
         self.blocks_movement = blocks_movement;
         self.render_order = render_order;
+        self.inventory = inventory;
+        if self.inventory:
+            self.inventory.parent = self;
+
         if parent:
             # If the gamemap is not provided now then it will be set later.
             self.parent = parent;
@@ -127,11 +133,14 @@ class Actor(Entity):
             color: Tuple[int, int, int] = (255, 255, 255),
             name: str = "<Unnamed>",
             description: str = "<No Description>",
+            blocks_movement: bool = True,
             ai_cls: Type[BaseAI],
             equipment: Equipment,
             fighter: Fighter,
             inventory: Inventory,
-            level: Level
+            level: Level,
+            dialogue: Dialogue,
+            attributes: Attributes
     ):
         super().__init__(
             x=x,
@@ -142,6 +151,7 @@ class Actor(Entity):
             description=description,
             blocks_movement=True,
             render_order=RenderOrder.ACTOR,
+            inventory=inventory
         );
 
         self.ai: Optional[BaseAI] = ai_cls(self);
@@ -157,6 +167,12 @@ class Actor(Entity):
 
         self.level = level;
         self.level.parent = self;
+
+        self.dialogue = dialogue;
+        self.dialogue.parent = self;
+
+        self.attributes = attributes;
+        self.attributes.parent = self;
 
     @property
     def is_alive(self) -> bool:
