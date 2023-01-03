@@ -56,7 +56,7 @@ def main():
                 save_game(handler, "savegame.sav");
                 raise
             except BaseException: # Save on any other unexpected exception.
-                save_game(handler, "savegame.sav");
+                print("error");
                 raise
 
 if __name__ == '__main__':

@@ -13,6 +13,7 @@ from actions import Action, BumpAction, WaitAction, PickupAction;
 from components.attributes import Attributes;
 import color;
 import exceptions;
+import tile_types;
 
 if TYPE_CHECKING:
     from engine import Engine;
@@ -708,7 +709,8 @@ class CharacterSheet(EventHandler):
 
         if self.entity.equipment:
             if self.entity.equipment.weapon:
-                sheet_console.print(1, 16, f"Weapon: {self.entity.equipment.weapon.name}", fg=color.strength);
+                weapon = self.entity.equipment.weapon;
+                sheet_console.print(1, 16, f"Weapon: {weapon.name}, {weapon.roll_number}d{weapon.damage_roll} ->{weapon.penetration}", fg=color.strength);
             else:
                 sheet_console.print(1, 16, "Weapon: <Empty>");
 
@@ -918,3 +920,29 @@ class CharacterCreationHandler(EventHandler):
                 self.points -= 1;
 
         return None;
+
+class MapEditorHandler(SelectIndexHandler):
+    def __init__(self, engine: Engine):
+        self.engine = engine;
+        self.char = "#";
+        engine.mouse_location = (0, 0);
+
+    def on_render(self, console: tcod.Console) -> None:
+        self.engine.render(console);
+        super().on_render(console);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[EventOrHandler]:
+        try:
+            char = chr(event.sym.value);
+        except ValueError:
+            char = self.char;
+
+        if char in list(tile_types.tiles_by_char.keys()):
+            self.char = char;
+
+        super().ev_keydown(event);
+
+        return None;
+
+    def on_index_selected(self, x: int, y: int) -> None:
+        self.engine.game_map.tiles[x, y] = tile_types.tiles_by_char[self.char];

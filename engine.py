@@ -2,7 +2,7 @@ from __future__ import annotations;
 
 import lzma;
 import pickle;
-from typing import TYPE_CHECKING;
+from typing import TYPE_CHECKING, Optional;
 
 from tcod.context import Context;
 from tcod.console import Console;
@@ -27,10 +27,11 @@ class Engine:
         with open(filename, "wb") as f:
             f.write(save_data);
 
-    def __init__(self, player: Actor):
+    def __init__(self, player: Optional[Actor], show_all_tiles = False):
         self.message_log = MessageLog();
         self.mouse_location = (0, 0);
         self.player = player;
+        self.show_all_tiles = show_all_tiles;
 
     def handle_enemy_turns(self) -> None:
         for entity in set(self.game_map.actors) - {self.player}:
@@ -42,6 +43,9 @@ class Engine:
 
     def render(self, console: Console) -> None:
         self.game_map.render(console);
+
+        if not self.player:
+            return;
 
         self.message_log.render(console, x=21, y=45, width=40, height=5);
 
@@ -75,10 +79,13 @@ class Engine:
 
     def update_fov(self) -> None:
         """ Recompute the visible area based on the player's point of view."""
-        self.game_map.visible[:] = compute_fov(
+        if self.show_all_tiles:
+            self.game_map.visible[:] = True;
+        else:
+            self.game_map.visible[:] = compute_fov(
                 self.game_map.tiles["transparent"],
                 (self.player.x, self.player.y),
                 radius=8,
-        );
+            );
 
         self.game_map.explored |= self.game_map.visible;

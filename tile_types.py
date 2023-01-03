@@ -63,3 +63,11 @@ up_stairs = new_tile(
     dark=(ord("<"), (0, 0, 100), (50, 50, 150)),
     light=(ord("<"), (255, 255, 255), (200, 180, 50))
 );
+
+
+tiles_by_char = {
+    '#': wall,
+    '.': floor,
+    '>': down_stairs,
+    '<': up_stairs,
+};

@@ -17,14 +17,15 @@ basalt_rock = Item(
     color=(20, 20, 20),
     name="Basalt Rock",
     description="A small piece of hardened magma. Due to its relative scarcity and durabilty, it is valued by merchants as tender.",
-    equippable=equippable.Equippable(EquipmentType.WEAPON,power_bonus=1, defense_bonus=0)
+    equippable=equippable.Equippable(EquipmentType.WEAPON,penetration=3, damage_roll=8, roll_number=1, defense_bonus=0)
 );
 
 pickaxe = Item(
     char="^",
+    name="Pickaxe",
     color=color.steel,
     description="A well-worn pickaxe. Countless such tools were given out to the condemned who were sent to work in the Tar Pits. Little did their overseers know that these same tools would then be used by the enslaved to decimate their masters once the noxious fumes of the Ferrum deprived them of their wits.",
-    equippable=equippable.Equippable(EquipmentType.WEAPON, power_bonus=3, defense_bonus=0)
+    equippable=equippable.Equippable(EquipmentType.WEAPON, penetration=3, damage_roll=8, roll_number=1, defense_bonus=0)
 )
 
 toad = Actor(char="t",
@@ -58,8 +59,8 @@ miner = Actor(char="M",
               name="Lapidified Miner",
               description="The hard crust of compressed volcanic ash mixed with centuries-old mud and grime hides a hollow interior which may once have housed a soul.",
               ai_cls=HostileEnemy,
-              equipment=Equipment(),
-              inventory=Inventory(capacity=2),
+              equipment=Equipment(weapon=copy.deepcopy(pickaxe)),
+              inventory=Inventory(capacity=1),
               fighter=Fighter(),
               level=Level(xp_given=250),
               dialogue=Dialogue(),

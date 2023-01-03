@@ -12,7 +12,7 @@ import tcod;
 import color;
 from engine import Engine;
 import entity_factories;
-from game_map import GameWorld;
+from game_map import GameMap, GameWorld;
 import input_handlers;
 from procgen import generate_dungeon;
 
@@ -54,6 +54,22 @@ def new_game() -> Engine:
 
     return engine;
 
+def new_map_editor() -> Engine:
+    map_width = 80;
+    map_height = 43;
+
+    engine = Engine(player=None, show_all_tiles=True);
+
+    engine.game_world = GameWorld(
+            engine=engine,
+            map_width=map_width,
+            map_height=map_height,
+    );
+    engine.game_world.generate_empty_floor();
+    engine.update_fov();
+
+    return engine;
+
 def load_game(filename: str) -> Engine:
     """Load an Engine instance from a file."""
     with open(filename, "rb") as f:
@@ -85,7 +101,7 @@ class MainMenu(input_handlers.BaseEventHandler):
 
         menu_width = 24;
         for i, text in enumerate(
-            ["[N] Play a new game", "[C] Continue last game", "[R] Create a new character", "[Q] Quit"]
+            ["[N] Play a new game", "[C] Continue last game", "[R] Create a new character", "[E] Map Editor", "[Q] Quit"]
         ):
             console.print(
                 console.width // 2,
@@ -114,5 +130,7 @@ class MainMenu(input_handlers.BaseEventHandler):
             return input_handlers.MainGameEventHandler(new_game());
         elif event.sym == tcod.event.K_r:
             return input_handlers.CharacterCreationHandler(new_game(), ["vitality", "resistance", "strength"], 10);
+        elif event.sym == tcod.event.K_e:
+            return input_handlers.MapEditorHandler(new_map_editor());
 
         return None;

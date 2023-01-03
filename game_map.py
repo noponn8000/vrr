@@ -120,9 +120,9 @@ class GameWorld:
             engine: Engine,
             map_width: int,
             map_height: int,
-            max_rooms: int,
-            room_min_size: int,
-            room_max_size: int,
+            max_rooms: int = 0,
+            room_min_size: int = 0,
+            room_max_size: int = 0,
             current_floor: int = 0,
     ):
         self.engine = engine;
@@ -157,6 +157,9 @@ class GameWorld:
 
         x, y = self.engine.game_map.downstairs_location;
         self.engine.player.place(x, y, self.engine.game_map);
+
+    def generate_empty_floor(self) -> None:
+        self.engine.game_map = GameMap(self.engine, self.map_width, self.map_height);
 
     def generate_floor(self) -> None:
         # Cellular automaton dungeon generation
@@ -198,3 +201,12 @@ class GameWorld:
         except IndexError:
             print(f"Invalid floor index {index}");
             return;
+
+def load_map_from_file(file_path: str, width: int, height: int, engine: Engine):
+    game_map = GameMap(engine, width, height);
+    with open(file_path, "r") as f:
+       for y, line in enumerate(f.readlines()):
+           for x, char in enumerate(line.strip()):
+               game_map.tiles[x, y] = tile_types.tiles_by_char[char];
+
+    return game_map;

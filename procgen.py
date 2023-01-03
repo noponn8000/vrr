@@ -295,6 +295,6 @@ def place_entities(
         if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
             if isinstance(entity, Actor):
                 entity.fighter.update_stats();
-                for item in get_inventory_at_random(inventory_chances, entity, 3):
+                for item in get_inventory_at_random(inventory_chances, entity, entity.inventory.capacity):
                     entity.inventory.add(item);
             entity.spawn(dungeon, x, y);
