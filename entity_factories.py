@@ -59,7 +59,9 @@ miner = Actor(char="M",
               name="Lapidified Miner",
               description="The hard crust of compressed volcanic ash mixed with centuries-old mud and grime hides a hollow interior which may once have housed a soul.",
               ai_cls=HostileEnemy,
-              equipment=Equipment(weapon=copy.deepcopy(pickaxe)),
+              equipment=Equipment(
+                  slots={"weapon": copy.deepcopy(pickaxe), "armor": None}
+                  ),
               inventory=Inventory(capacity=1),
               fighter=Fighter(),
               level=Level(xp_given=250),

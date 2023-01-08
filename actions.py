@@ -155,8 +155,8 @@ class MeleeAction(ActionWithDirection):
         if not target:
             raise exceptions.Impossible("Nothing to attack.");
 
-        if self.entity.equipment.weapon:
-            damage = self.entity.equipment.weapon.equippable.calculate_damage(self.entity.fighter.power, target.fighter.defense);
+        if self.entity.equipment.get_item_in_slot("weapon"):
+            damage = self.entity.equipment.get_item_in_slot("weapon").equippable.calculate_damage(self.entity.fighter.power, target.fighter.defense);
         else:
             damage = self.entity.fighter.power - target.fighter.defense;
 

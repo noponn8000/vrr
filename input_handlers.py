@@ -11,6 +11,7 @@ import tcod.event;
 import actions;
 from actions import Action, BumpAction, WaitAction, PickupAction;
 from components.attributes import Attributes;
+from components.ai import WalkTowards;
 import color;
 import exceptions;
 import tile_types;
@@ -566,7 +567,10 @@ class MainGameEventHandler(EventHandler):
         if key == tcod.event.K_PERIOD and modifier & (
                 tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT
         ):
-            return actions.TakeDownStairsAction(player);
+            if (player.x, player.y) == self.engine.game_map.downstairs_location:
+                return actions.TakeDownStairsAction(player);
+            elif self.engine.game_map.explored[self.engine.game_map.downstairs_location]:
+                return WalkTowardsHandler(self.engine, self.engine.game_map.downstairs_location);
         elif key == tcod.event.K_COMMA and modifier & (
                 tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT
         ):
@@ -695,7 +699,7 @@ class CharacterSheet(EventHandler):
         sheet_console.print(1, 6, "┤Attributes and health├");
 
         if self.entity.fighter:
-            sheet_console.print(1, 7, f"- Health: {self.entity.fighter.hp}/{self.entity.fighter.max_hp}", fg=color.vitality);
+            sheet_console.print(1, 7, f"- Health: ♥{self.entity.fighter.hp}/{self.entity.fighter.max_hp}", fg=color.vitality);
             sheet_console.print(1, 9, f"- Vitality: {self.entity.attributes.attributes['vitality']}", fg=color.vitality);
             sheet_console.print(1, 11, f"- Strength: {self.entity.attributes.attributes['strength']}", fg=color.strength);
             sheet_console.print(1, 13, f"- Resistance: {self.entity.attributes.attributes['resistance']}", fg=color.resistance);
@@ -708,15 +712,16 @@ class CharacterSheet(EventHandler):
         sheet_console.print(1, 15, "┤Equipment├");
 
         if self.entity.equipment:
-            if self.entity.equipment.weapon:
-                weapon = self.entity.equipment.weapon;
-                sheet_console.print(1, 16, f"Weapon: {weapon.name}, {weapon.roll_number}d{weapon.damage_roll} ->{weapon.penetration}", fg=color.strength);
+            if self.entity.equipment.get_item_in_slot("weapon"):
+                weapon = self.entity.equipment.get_item_in_slot("weapon");
+                sheet_console.print(1, 16, f"Weapon: {weapon.name}, ♥{weapon.equippable.roll_number}d{weapon.equippable.damage_roll} ->{weapon.equippable.penetration}", fg=color.strength);
             else:
                 sheet_console.print(1, 16, "Weapon: <Empty>");
 
 
-            if self.entity.equipment.weapon:
-                sheet_console.print(1, 18, f"Armor: {self.entity.equipment.armor.name}", fg=color.resistance);
+            if self.entity.equipment.get_item_in_slot("armor"):
+                armor = self.entity.equipment.get_item_in_slot('armor');
+                sheet_console.print(1, 18, f"Armor: {armor.name}, ■{armor.equippable.defense_bonus}", fg=color.resistance);
             else:
                 sheet_console.print(1, 18, "Armor: <Empty>");
         else:
@@ -776,7 +781,7 @@ class DialogueEventHandler(EventHandler):
 
         dialogue_console.blit(console, 15, 15);
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[EventOrHandler]:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         # The player has exhausted the dialogue.
         if self.dialogue.choices == []:
             self.dialogue.reset();
@@ -931,7 +936,7 @@ class MapEditorHandler(SelectIndexHandler):
         self.engine.render(console);
         super().on_render(console);
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[EventOrHandler]:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
         try:
             char = chr(event.sym.value);
         except ValueError:
@@ -946,3 +951,15 @@ class MapEditorHandler(SelectIndexHandler):
 
     def on_index_selected(self, x: int, y: int) -> None:
         self.engine.game_map.tiles[x, y] = tile_types.tiles_by_char[self.char];
+
+class WalkTowardsHandler(EventHandler):
+    def __init__(self, engine: Engine, target: Tuple[int, int]):
+        super().__init__(engine);
+        self.target = target;
+        self.ai = WalkTowards(self.engine.player, self.target);
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[ActionOrHandler]:
+        if event.sym == tcod.event.K_PERIOD:
+            return self.ai.perform();
+        else:
+            return MainGameEventHandler(self.engine);

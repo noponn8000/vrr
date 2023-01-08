@@ -110,3 +110,24 @@ class HostileEnemy(BaseAI):
             ).perform();
 
         return WaitAction(self.entity).perform();
+
+class WalkTowards(BaseAI):
+    def __init__(self, entity: Actor, target: Tuple[int, int]):
+        super().__init__(entity);
+        self.path: List[[int, int]] = [];
+        self.target = target;
+
+    def perform(self) -> Optional[MovementAction]:
+        x, y = self.target;
+        dx = x - self.entity.x;
+        dy = y - self.entity.y;
+
+        self.path = self.get_path_to(x, y);
+
+        if self.path:
+            dest_x, dest_y = self.path.pop(0);
+            return MovementAction(
+                    self.entity, dest_x - self.entity.x, dest_y - self.entity.y,
+            );
+
+        return None;

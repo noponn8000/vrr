@@ -52,6 +52,8 @@ def new_game() -> Engine:
         if slot.item.equippable:
             player.equipment.toggle_equip(slot.item, add_message=False);
 
+    print(player.equipment.slots);
+
     return engine;
 
 def new_map_editor() -> Engine:
@@ -87,7 +89,7 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.print(
             console.width // 2,
             console.height // 2 - 4,
-            "Arcanus",
+            "Rogalik",
             fg=color.ui_title,
             alignment=tcod.CENTER
         );
